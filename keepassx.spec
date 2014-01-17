@@ -1,18 +1,25 @@
+%define		pre alpha6
+
 Summary:	Free, open source, light-weight and easy-to-use password manager
 Name:		keepassx
-Version:	0.4.3
-Release:	1
+Version:	2.0
+Release:	0.%{pre}.1
 License:	GPL v2 and other
 Group:		X11/Applications
-Source0:	http://downloads.sourceforge.net/keepassx/%{name}-%{version}.tar.gz
-# Source0-md5:	1df67bb22b2e08df49f09e61d156f508
-Patch0:		%{name}-include.patch
+#Source0:	http://downloads.sourceforge.net/keepassx/%{name}-%{version}.tar.gz
+Source0:	https://github.com/keepassx/keepassx/archive/master.zip
+# Source0-md5:	42dcd0931c7c1ad8766f109e887d46e2
+BuildRequires:	QtDBus-devel
 BuildRequires:	QtGui-devel
 BuildRequires:	QtXml-devel
-BuildRequires:	qt-qmake
+BuildRequires:	cmake
+BuildRequires:	desktop-file-utils
+BuildRequires:	libgcrypt-devel
 BuildRequires:	xorg-libXtst-devel
-Requires(post,postun):	shared-mime-info
+BuildRequires:	zlib-devel
+Requires(post,postun):	/usr/bin/gtk-update-icon-cache
 Requires(post,postun):	desktop-file-utils
+Requires(post,postun):	hicolor-icon-theme
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %description
@@ -25,18 +32,20 @@ are encrypted using the best and most secure encryption algorithms
 currently known (AES and Twofish).
 
 %prep
-%setup -q
-%patch0 -p1
+%setup -qn %{name}-master
 
 %build
-qmake
+install -d build
+cd build
+%cmake .. \
+	-DCMAKE_VERBOSE_MAKEFILE=ON
 %{__make}
 
 %install
 rm -rf $RPM_BUILD_ROOT
 
-%{__make} install \
-	INSTALL_ROOT=$RPM_BUILD_ROOT
+%{__make} -C build install \
+	DESTDIR=$RPM_BUILD_ROOT
 
 desktop-file-validate $RPM_BUILD_ROOT%{_desktopdir}/keepassx.desktop
 
@@ -44,24 +53,24 @@ desktop-file-validate $RPM_BUILD_ROOT%{_desktopdir}/keepassx.desktop
 rm -rf $RPM_BUILD_ROOT
 
 %post
-%update_mime_database
 %update_desktop_database
+%update_icon_cache hicolor
 
 %postun
-%update_mime_database
 %update_desktop_database
+%update_icon_cache hicolor
 
 %files
 %defattr(644,root,root,755)
-%doc COPYING changelog
+%doc CHANGELOG COPYING LICENSE*
 %attr(755,root,root) %{_bindir}/keepassx
+
+%dir %{_libdir}/keepassx
+%attr(755,root,root) %{_libdir}/keepassx/libkeepassx-autotype-x11.so
+
 %dir %{_datadir}/%{name}
 %{_datadir}/%{name}/icons
-%{_datadir}/mime/packages/keepassx.xml
 %{_desktopdir}/keepassx.desktop
-%{_pixmapsdir}/keepassx.xpm
-
-%dir %{_datadir}/%{name}/i18n
-%lang(de) %{_datadir}/%{name}/i18n/keepassx-de_DE.qm
-%lang(pl) %{_datadir}/%{name}/i18n/keepassx-pl_PL.qm
+%{_iconsdir}/hicolor/*/apps/keepassx.png
+%{_iconsdir}/hicolor/*/apps/keepassx.svgz
 
